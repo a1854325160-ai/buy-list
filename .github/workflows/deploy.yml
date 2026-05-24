@@ -25,6 +25,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install ImageMagick
+        run: sudo apt-get install -y imagemagick
+
       - name: Generate App Icons
         run: |
           mkdir -p ui_kits/app/icons
