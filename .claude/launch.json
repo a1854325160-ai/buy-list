@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "buy-list",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-l", "3456", "E:\\Claude 1\\Buy List Design System\\ui_kits\\app"],
+      "port": 3456
+    }
+  ]
+}

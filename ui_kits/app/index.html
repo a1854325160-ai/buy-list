@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Buy List</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111111">
+
+<!-- iOS 安裝成 App 必要設定 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Buy List">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+/* ── RESET ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#fff7ed;-webkit-font-smoothing:antialiased}
+#root{width:100%;max-width:640px;margin:0 auto;display:flex;flex-direction:column;min-height:100%}
+
+/* ═══════════════════════════
+   MOBILE BASE
+═══════════════════════════ */
+
+/* App shell */
+.app-container{width:100%;height:100vh;background:#fff;display:flex;flex-direction:column;position:relative;box-shadow:0 0 60px rgba(249,115,22,.06),0 0 0 1px rgba(0,0,0,.04)}
+
+/* Header */
+.app-header{padding:18px 20px 12px;background:#fff;border-bottom:1px solid #f0f0f0;flex-shrink:0;position:relative;z-index:20}
+.app-header-row{display:flex;align-items:center;gap:10px}
+.header-left{display:flex;flex-direction:column;flex-shrink:0}
+.app-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:#111;letter-spacing:-0.03em}
+.header-stats-inline{display:none}
+.d-search-wrap{display:none}
+.header-spacer{flex:1}
+.header-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.icon-btn-sm{width:36px;height:36px;border-radius:50%;background:#f4f4f4;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 150ms;flex-shrink:0}
+.icon-btn-sm:hover{background:#eee}
+.d-add-btn{display:none}
+.header-sub{font-size:13px;color:#aaa;margin-top:3px}
+
+/* Collapsible search bar (mobile) */
+.search-bar-wrap{overflow:hidden;max-height:0;transition:max-height 250ms cubic-bezier(0.4,0,0.2,1),padding 250ms;padding:0 20px;background:#fff;border-bottom:1px solid transparent;flex-shrink:0}
+.search-bar-wrap.open{max-height:64px;padding:10px 20px;border-bottom-color:#f0f0f0}
+.search-input-inner{width:100%;font-family:'DM Sans',sans-serif;font-size:15px;color:#111;background:#f4f4f4;border:1.5px solid transparent;border-radius:9999px;padding:10px 16px 10px 38px;outline:none;transition:all 200ms}
+.search-input-inner:focus{background:#fff;border-color:#111}
+.search-input-inner::placeholder{color:#ccc}
+.search-input-wrap{position:relative}
+.search-icon-abs{position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none}
+
+/* Scrollable content */
+.main-content{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#f0f0f0 transparent}
+.main-content::-webkit-scrollbar{width:4px}
+.main-content::-webkit-scrollbar-thumb{background:#e8e8e8;border-radius:9999px}
+
+/* Sections — mobile: stacked vertically */
+.sections-layout{display:block}
+.section-col{padding:0 20px}
+.section-col+.section-col{border-top:1px solid #f0f0f0}
+
+/* Section header */
+.section-header{display:flex;align-items:center;gap:10px;padding:16px 0 10px}
+.s-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.s-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;color:#111;flex:1}
+.s-count{font-family:'JetBrains Mono',monospace;font-size:11px;color:#bbb}
+
+/* Item card */
+.item-card{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1.5px solid #f0f0f0;border-radius:18px;margin-bottom:8px;cursor:pointer;transition:all 160ms cubic-bezier(0.4,0,0.2,1)}
+.item-card:hover{border-color:#ddd;background:#fafafa}
+.item-card:active{transform:scale(0.985)}
+.item-card.done{opacity:.4}
+.item-body{flex:1;min-width:0}
+.item-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:600;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-name.done{text-decoration:line-through;color:#ccc}
+.item-meta{display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap}
+.item-tag{font-size:11px;color:#bbb}
+.item-date{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#f97316;font-weight:500}
+.item-link{display:inline-flex;align-items:center;color:#6366f1;opacity:.7}
+.item-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.item-price{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;color:#111;white-space:nowrap}
+.item-price.done{color:#ccc}
+.item-check{width:24px;height:24px;border-radius:50%;border:2px solid #e0e0e0;display:flex;align-items:center;justify-content:center;transition:all 200ms cubic-bezier(0.34,1.56,0.64,1);background:#fff;flex-shrink:0;cursor:pointer}
+.item-check.done{background:#111;border-color:#111}
+.empty{padding:24px 0 8px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.empty-text{font-size:13px;color:#ddd}
+
+/* Search results — mobile: single column */
+.search-results-wrap{padding:4px 20px 0}
+.search-results-grid{display:block}
+.search-results-grid .item-card{margin-bottom:8px}
+
+/* FAB (mobile only) */
+.fab{position:absolute;right:22px;bottom:28px;width:56px;height:56px;border-radius:50%;background:#111;color:#fff;border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.25);cursor:pointer;transition:all 200ms cubic-bezier(0.34,1.56,0.64,1);z-index:20}
+.fab:hover{transform:scale(1.07);background:#333}
+.fab:active{transform:scale(0.93)}
+
+/* Overlay / Sheet — mobile: bottom sheet */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(6px);z-index:100;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn 180ms ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fadeScaleIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.sheet{width:100%;max-width:640px;background:#fff;border-radius:28px 28px 0 0;padding:0 22px 48px;animation:slideUp 260ms cubic-bezier(0.34,1.56,0.64,1);max-height:92vh;overflow-y:auto}
+.sheet::-webkit-scrollbar{display:none}
+.sheet-handle{width:38px;height:4px;background:#e0e0e0;border-radius:9999px;margin:12px auto 20px}
+.sheet-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:#111;letter-spacing:-0.02em;margin-bottom:18px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.f-label{font-size:11px;font-weight:600;color:#aaa;letter-spacing:.05em;text-transform:uppercase}
+.f-input{font-family:'DM Sans',sans-serif;font-size:15px;color:#111;background:#f7f7f7;border:1.5px solid transparent;border-radius:14px;padding:12px 14px;outline:none;width:100%;transition:all 200ms}
+.f-input:focus{background:#fff;border-color:#111}
+.f-input::placeholder{color:#ccc}
+.f-row{display:flex;gap:10px}
+.icon-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.icon-opt{width:100%;aspect-ratio:1;border-radius:14px;border:2px solid #f0f0f0;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 150ms}
+.icon-opt:hover{border-color:#ccc;background:#f9f9f9}
+.icon-opt.sel{border-color:#111;background:#111}
+.seg-row{display:flex;gap:8px}
+.seg-btn{flex:1;padding:11px 6px;border-radius:12px;border:1.5px solid #f0f0f0;background:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:#888;cursor:pointer;transition:all 150ms;display:flex;flex-direction:column;align-items:center;gap:5px}
+.seg-btn.sel{background:#111;border-color:#111;color:#fff}
+.seg-dot{width:7px;height:7px;border-radius:50%}
+.add-btn{width:100%;padding:16px;border-radius:9999px;background:#111;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;cursor:pointer;margin-top:18px;transition:all 160ms}
+.add-btn:hover{background:#333}
+.add-btn:active{transform:scale(.98)}
+.add-btn:disabled{background:#e0e0e0;color:#bbb;cursor:not-allowed}
+.detail-icon-lg{width:68px;height:68px;border-radius:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.d-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:21px;font-weight:800;color:#111;text-align:center;letter-spacing:-0.02em;margin-bottom:4px}
+.d-price-text{font-family:'JetBrains Mono',monospace;font-size:15px;color:#888;text-align:center;margin-bottom:8px}
+.d-meta-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.d-meta-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#888;background:#f7f7f7;padding:5px 10px;border-radius:9999px}
+.action-row{display:flex;gap:8px;margin-bottom:8px}
+.act-btn{flex:1;padding:13px 8px;border-radius:15px;border:1.5px solid #f0f0f0;background:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:#111;cursor:pointer;transition:all 150ms;display:flex;flex-direction:column;align-items:center;gap:5px}
+.act-btn:hover{background:#f7f7f7;border-color:#ddd}
+.act-btn.primary{background:#111;color:#fff;border-color:#111}
+.act-btn.primary:hover{background:#333}
+.act-btn.danger{color:#e53e3e;border-color:#fee2e2;background:#fff5f5}
+.act-link{display:flex;align-items:center;gap:8px;padding:13px 16px;background:#f7f7f7;border-radius:14px;margin-top:10px;text-decoration:none}
+.act-link-text{font-size:13px;color:#6366f1;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Sort sheet — mobile: bottom sheet */
+.sort-sheet{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.sort-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.2)}
+.sort-panel{position:relative;background:#fff;border-radius:24px 24px 0 0;padding:0 20px 40px;z-index:1;animation:slideUp 220ms cubic-bezier(0.34,1.56,0.64,1);width:100%;max-width:640px}
+.sort-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;color:#111;margin-bottom:12px}
+.sort-opt{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;transition:opacity 150ms}
+.sort-opt:last-child{border-bottom:none}
+.sort-opt:hover{opacity:.7}
+.sort-opt-label{font-size:15px;font-weight:500;color:#111}
+.sort-opt.active .sort-opt-label{font-weight:700}
+
+/* ═══════════════════════════
+   DESKTOP ≥ 768px
+═══════════════════════════ */
+@media (min-width:768px){
+  body{display:flex;justify-content:center;min-height:100vh}
+  #root{max-width:1080px;height:auto;min-height:100vh}
+
+  /* App shell */
+  .app-container{height:auto;min-height:100vh;box-shadow:none;border-left:1px solid rgba(0,0,0,.06);border-right:1px solid rgba(0,0,0,.06)}
+
+  /* Header — sticky top bar */
+  .app-header{padding:14px 28px;position:sticky;top:0;z-index:30;background:#fff}
+  .app-header-row{gap:14px;align-items:center}
+  .app-title{font-size:20px}
+  .header-stats-inline{display:block;font-size:13px;color:#aaa;margin-top:2px;white-space:nowrap}
+  .header-sub{display:none!important}
+
+  /* Always-visible search in header */
+  .d-search-wrap{display:flex;flex:1;max-width:340px;position:relative}
+  .d-search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;z-index:1}
+  .d-search-input{width:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:#111;background:#f4f4f4;border:1.5px solid transparent;border-radius:9999px;padding:9px 16px 9px 36px;outline:none;transition:all 200ms}
+  .d-search-input:focus{background:#fff;border-color:#111}
+  .d-search-input::placeholder{color:#ccc}
+
+  /* Add button in header */
+  .d-add-btn{display:flex;align-items:center;gap:6px;padding:9px 18px;background:#111;color:#fff;border:none;border-radius:9999px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background 150ms;flex-shrink:0}
+  .d-add-btn:hover{background:#333}
+
+  /* Hide mobile-only */
+  .btn-search-toggle{display:none!important}
+  .search-bar-wrap{display:none!important}
+  .fab{display:none!important}
+
+  /* Page scroll instead of container scroll */
+  .main-content{flex:none;overflow:visible}
+
+  /* 3-column kanban */
+  .sections-layout{display:grid;grid-template-columns:repeat(3,1fr);align-items:start;padding-bottom:80px}
+  .section-col{padding:0 24px;border-right:1px solid #f0f0f0}
+  .section-col:first-child{padding-left:28px}
+  .section-col:last-child{border-right:none;padding-right:28px}
+  .section-col+.section-col{border-top:none}
+
+  /* Sticky section headers per column */
+  .section-header{padding:22px 0 14px;position:sticky;top:61px;background:#fff;z-index:10}
+  .s-name{font-size:15px}
+
+  /* Search results — 2-column grid */
+  .search-results-wrap{padding:20px 28px 0}
+  .search-results-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .search-results-grid .item-card{margin-bottom:0}
+
+  /* Centered modal instead of bottom sheet */
+  .overlay{align-items:center}
+  .sheet{border-radius:24px;max-width:520px;max-height:85vh;padding-bottom:32px;animation:fadeScaleIn 220ms cubic-bezier(0.34,1.56,0.64,1)}
+  .sheet-handle{display:none}
+  .sheet-title{padding-top:4px}
+
+  /* Sort — centered modal */
+  .sort-sheet{justify-content:center}
+  .sort-panel{border-radius:20px;max-width:380px;padding:16px 20px 24px;animation:fadeScaleIn 200ms cubic-bezier(0.34,1.56,0.64,1)}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+/* ── SVG Icons ── */
+const SVGS = {
+  laptop:(c='#555')=><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="13" rx="3" fill={c} opacity=".15"/><rect x="2" y="4" width="20" height="13" rx="3" stroke={c} strokeWidth="1.8" strokeLinejoin="round"/><rect x="5" y="7" width="14" height="7" rx="1.5" fill={c} opacity=".25"/><path d="M1 19.5h22" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><path d="M9 17l-.5 2.5M15 17l.5 2.5" stroke={c} strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  phone:(c='#555')=><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="5" y="1.5" width="14" height="21" rx="3.5" fill={c} opacity=".15"/><rect x="5" y="1.5" width="14" height="21" rx="3.5" stroke={c} strokeWidth="1.8"/><rect x="8" y="5" width="8" height="12" rx="1.5" fill={c} opacity=".2"/><circle cx="12" cy="19" r="1.2" fill={c}/><path d="M10 3h4" stroke={c} strokeWidth="2" strokeLinecap="round"/></svg>,
+  headphones:(c='#555')=><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 14v-3a8 8 0 0 1 16 0v3" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><rect x="2" y="13" width="4" height="6" rx="2" fill={c} opacity=".25" stroke={c} strokeWidth="1.8"/><rect x="18" y="13" width="4" height="6" rx="2" fill={c} opacity=".25" stroke={c} strokeWidth="1.8"/></svg>,
+  drone:(c='#555')=><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" fill={c} opacity=".2" stroke={c} strokeWidth="1.6"/><line x1="12" y1="9" x2="12" y2="6" stroke={c} strokeWidth="1.5" strokeLinecap="round"/><line x1="12" y1="18" x2="12" y2="15" stroke={c} strokeWidth="1.5" strokeLinecap="round"/><line x1="9" y1="12" x2="6" y2="12" stroke={c} strokeWidth="1.5" strokeLinecap="round"/><line x1="18" y1="12" x2="15" y2="12" stroke={c} strokeWidth="1.5" strokeLinecap="round"/><ellipse cx="5" cy="5" rx="2.5" ry="1.2" fill={c} opacity=".3" stroke={c} strokeWidth="1.4" transform="rotate(-20 5 5)"/><ellipse cx="19" cy="5" rx="2.5" ry="1.2" fill={c} opacity=".3" stroke={c} strokeWidth="1.4" transform="rotate(20 19 5)"/><ellipse cx="5" cy="19" rx="2.5" ry="1.2" fill={c} opacity=".3" stroke={c} strokeWidth="1.4" transform="rotate(20 5 19)"/><ellipse cx="19" cy="19" rx="2.5" ry="1.2" fill={c} opacity=".3" stroke={c} strokeWidth="1.4" transform="rotate(-20 19 19)"/></svg>,
+  keyboard:(c='#555')=><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="20" height="11" rx="2.5" fill={c} opacity=".15" stroke={c} strokeWidth="1.8"/><rect x="4" y="10" width="2.5" height="2" rx=".7" fill={c} opacity=".5"/><rect x="7.5" y="10" width="2.5" height="2" rx=".7" fill={c} opacity=".5"/><rect x="11" y="10" width="2.5" height="2" rx=".7" fill={c} opacity=".5"/><rect x="14.5" y="10" width="2.5" height="2" rx=".7" fill={c} opacity=".5"/><rect x="18" y="10" width="2" height="2" rx=".7" fill={c} opacity=".5"/><rect x="6" y="13.5" width="12" height="2" rx=".7" fill={c} opacity=".5"/><rect x="4" y="13.5" width="1.5" height="2" rx=".7" fill={c} opacity=".5"/><rect x="18.5" y="13.5" width="1.5" height="2" rx=".7" fill={c} opacity=".5"/></svg>,
+  monitor:(c='#555')=><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="14" rx="2.5" fill={c} opacity=".15" stroke={c} strokeWidth="1.8"/><rect x="5" y="6" width="14" height="8" rx="1.2" fill={c} opacity=".2"/><path d="M8 21h8M12 17v4" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><circle cx="12" cy="15" r=".8" fill={c} opacity=".5"/></svg>,
+  camera:(c='#555')=><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M14.5 4h-5L7.5 7H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3.5L14.5 4z" fill={c} opacity=".15" stroke={c} strokeWidth="1.8" strokeLinejoin="round"/><circle cx="12" cy="13" r="3.5" fill={c} opacity=".25" stroke={c} strokeWidth="1.7"/><circle cx="12" cy="13" r="1.3" fill={c} opacity=".5"/><circle cx="18" cy="10" r="1" fill={c} opacity=".4"/></svg>,
+  watch:(c='#555')=><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="6" y="5" width="12" height="14" rx="4" fill={c} opacity=".15" stroke={c} strokeWidth="1.8"/><path d="M9 3l1.5 2M15 3l-1.5 2M9 21l1.5-2M15 21l-1.5-2" stroke={c} strokeWidth="1.6" strokeLinecap="round"/><path d="M12 9v3.5l2 1.5" stroke={c} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r=".6" fill={c}/></svg>,
+  gamepad:(c='#555')=><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 4h12a2 2 0 0 1 2 2v7a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V6a2 2 0 0 1 2-2z" fill={c} opacity=".15" stroke={c} strokeWidth="1.8"/><line x1="6.5" y1="10" x2="9.5" y2="10" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><line x1="8" y1="8.5" x2="8" y2="11.5" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><circle cx="15" cy="9" r="1.1" fill={c}/><circle cx="17.2" cy="11" r="1.1" fill={c}/></svg>,
+  music:(c='#555')=><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 18V6l12-2v12" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><circle cx="6" cy="18" r="3" fill={c} opacity=".25" stroke={c} strokeWidth="1.7"/><circle cx="18" cy="16" r="3" fill={c} opacity=".25" stroke={c} strokeWidth="1.7"/><circle cx="6" cy="18" r="1.2" fill={c} opacity=".5"/><circle cx="18" cy="16" r="1.2" fill={c} opacity=".5"/></svg>,
+  package:(c='#555')=><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z" fill={c} opacity=".15" stroke={c} strokeWidth="1.8" strokeLinejoin="round"/><path d="M3 8l9 5 9-5" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><line x1="12" y1="13" x2="12" y2="21" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><path d="M7.5 5.5L16 10" stroke={c} strokeWidth="1.5" strokeLinecap="round" opacity=".4"/></svg>,
+  zap:(c='#555')=><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill={c} opacity=".2" stroke={c} strokeWidth="1.8" strokeLinejoin="round"/></svg>,
+};
+
+const ICON_LIST=[
+  {id:'laptop',    label:'電腦',  bg:'#fff8ed'},
+  {id:'phone',     label:'手機',  bg:'#f0f9ff'},
+  {id:'headphones',label:'耳機',  bg:'#fdf4ff'},
+  {id:'drone',     label:'無人機',bg:'#f0fdf4'},
+  {id:'keyboard',  label:'鍵盤',  bg:'#fff7ed'},
+  {id:'monitor',   label:'螢幕',  bg:'#f8fafc'},
+  {id:'camera',    label:'相機',  bg:'#fff1f2'},
+  {id:'watch',     label:'手錶',  bg:'#fefce8'},
+  {id:'gamepad',   label:'遊戲',  bg:'#eef2ff'},
+  {id:'music',     label:'音訊',  bg:'#fdf4ff'},
+  {id:'package',   label:'其他',  bg:'#f7f7f7'},
+  {id:'zap',       label:'3C',    bg:'#fefce8'},
+];
+
+const SECTIONS=[
+  {id:'priority',label:'優先購入',dot:'#111'},
+  {id:'deferred',label:'延後購入',dot:'#888'},
+  {id:'watching',label:'觀望',    dot:'#ccc'},
+];
+
+const SEED=[
+  {id:1,sec:'priority',icon:'laptop',    name:'MacBook Pro 14"',  price:'NT$65,900',note:'等 M4 Pro 版本',      tag:'電腦',date:'2025-08-01',url:'https://apple.com/tw/shop/buy-mac/macbook-pro'},
+  {id:2,sec:'priority',icon:'headphones',name:'AirPods Pro 2',    price:'NT$7,490', note:'',                    tag:'音訊',date:'',           url:''},
+  {id:3,sec:'deferred',icon:'drone',     name:'DJI Mini 4 Pro',   price:'NT$24,900',note:'等下一代或降價',       tag:'攝影',date:'2025-12-01',url:'https://store.dji.com/tw/product/dji-mini-4-pro'},
+  {id:4,sec:'deferred',icon:'phone',     name:'iPad mini 7',      price:'NT$16,900',note:'看年底有沒有新款',      tag:'平板',date:'',           url:''},
+  {id:5,sec:'watching',icon:'music',     name:'Sony WH-1000XM6',  price:'NT$11,900',note:'跟 Bose QC45 比較中', tag:'音訊',date:'',           url:''},
+  {id:6,sec:'watching',icon:'keyboard',  name:'Keychron Q1',      price:'NT$6,200', note:'',                    tag:'配件',date:'',           url:''},
+];
+
+function priceNum(p){return parseInt((p||'0').replace(/[^0-9]/g,''))||0;}
+
+function IconBox({iconId,size=44,radius=13,bg='#f4f4f4',color='#444',selected=false}){
+  const fn=SVGS[iconId]||SVGS['package'];
+  return <div style={{width:size,height:size,borderRadius:radius,background:selected?'#111':bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'background 150ms'}}>{fn(selected?'#fff':color)}</div>;
+}
+
+/* ── ADD SHEET ── */
+function AddSheet({onClose,onAdd}){
+  const[name,setName]=useState('');
+  const[price,setPrice]=useState('');
+  const[note,setNote]=useState('');
+  const[icon,setIcon]=useState('laptop');
+  const[sec,setSec]=useState('priority');
+  const[date,setDate]=useState('');
+  const[url,setUrl]=useState('');
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="sheet">
+        <div className="sheet-handle"/>
+        <div className="sheet-title">新增項目</div>
+        <div className="field">
+          <div className="f-label">圖示</div>
+          <div className="icon-grid">
+            {ICON_LIST.map(ic=>(
+              <div key={ic.id} className={`icon-opt ${icon===ic.id?'sel':''}`} onClick={()=>setIcon(ic.id)}>
+                <IconBox iconId={ic.id} size={36} radius={10} bg={ic.bg} color='#555' selected={icon===ic.id}/>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="field">
+          <div className="f-label">名稱</div>
+          <input className="f-input" placeholder="例：DJI Mini 4 Pro" value={name} onChange={e=>setName(e.target.value)} autoFocus/>
+        </div>
+        <div className="f-row">
+          <div className="field" style={{flex:1}}>
+            <div className="f-label">價格</div>
+            <input className="f-input" placeholder="NT$0" value={price} onChange={e=>setPrice(e.target.value)} style={{fontFamily:'JetBrains Mono,monospace'}}/>
+          </div>
+          <div className="field" style={{flex:1}}>
+            <div className="f-label">目標日期</div>
+            <input className="f-input" type="date" value={date} onChange={e=>setDate(e.target.value)} style={{fontSize:14}}/>
+          </div>
+        </div>
+        <div className="field">
+          <div className="f-label">商品連結（選填）</div>
+          <input className="f-input" placeholder="https://..." value={url} onChange={e=>setUrl(e.target.value)} style={{fontSize:13}}/>
+        </div>
+        <div className="field">
+          <div className="f-label">備註（選填）</div>
+          <input className="f-input" placeholder="顏色、版本、等降價..." value={note} onChange={e=>setNote(e.target.value)}/>
+        </div>
+        <div className="field">
+          <div className="f-label">分類</div>
+          <div className="seg-row">
+            {SECTIONS.map(s=>(
+              <button key={s.id} className={`seg-btn ${sec===s.id?'sel':''}`} onClick={()=>setSec(s.id)}>
+                <span className="seg-dot" style={{background:sec===s.id?'#fff':s.dot}}/>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <button className="add-btn" disabled={!name.trim()} onClick={()=>{onAdd({id:Date.now(),sec,icon,name,price:price||'—',note,tag:'',date,url});onClose();}}>加入清單</button>
+      </div>
+    </div>
+  );
+}
+
+/* ── DETAIL SHEET ── */
+function DetailSheet({item,onClose,onDelete,onMove,onDone}){
+  if(!item)return null;
+  const ico=ICON_LIST.find(i=>i.id===item.icon)||ICON_LIST[0];
+  const others=SECTIONS.filter(s=>s.id!==item.sec);
+  const fmt=d=>{if(!d)return null;const[,m,dy]=d.split('-');return`${m}/${dy}`;};
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="sheet">
+        <div className="sheet-handle"/>
+        <div className="detail-icon-lg" style={{background:ico.bg}}>{(SVGS[item.icon]||SVGS['package'])('#555')}</div>
+        <div className="d-name">{item.name}</div>
+        <div className="d-price-text">{item.price}</div>
+        <div className="d-meta-row">
+          {fmt(item.date)&&<span className="d-meta-chip" style={{color:'#f97316'}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>{fmt(item.date)}</span>}
+          {item.note&&<span className="d-meta-chip">📝 {item.note}</span>}
+        </div>
+        <div className="action-row">
+          <button className="act-btn primary" onClick={()=>{onDone(item.id);onClose();}}>
+            {item.done?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+            {item.done?'取消購買':'標記購買'}
+          </button>
+          <button className="act-btn danger" onClick={()=>{onDelete(item.id);onClose();}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e53e3e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+            刪除
+          </button>
+        </div>
+        <div style={{marginTop:10}}>
+          <div style={{fontSize:11,fontWeight:600,color:'#bbb',letterSpacing:'.05em',textTransform:'uppercase',marginBottom:8}}>移動到</div>
+          <div className="action-row">
+            {others.map(s=>(
+              <button key={s.id} className="act-btn" onClick={()=>{onMove(item.id,s.id);onClose();}} style={{gap:6}}>
+                <span style={{width:8,height:8,borderRadius:'50%',background:s.dot,display:'block'}}/>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {item.url&&(
+          <a className="act-link" href={item.url} target="_blank" rel="noopener noreferrer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span className="act-link-text">{item.url.replace(/^https?:\/\//,'')}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const SORT_OPTS=[
+  {id:'default',   label:'預設順序'},
+  {id:'name',      label:'名稱 A → Z'},
+  {id:'price-asc', label:'價格 低 → 高'},
+  {id:'price-desc',label:'價格 高 → 低'},
+  {id:'date',      label:'日期 最近優先'},
+];
+
+/* ── ITEM ROW ── */
+function ItemRow({item,setItems,setActive,fmtDate}){
+  const ico=ICON_LIST.find(i=>i.id===item.icon)||ICON_LIST[0];
+  return(
+    <div className={`item-card ${item.done?'done':''}`} onClick={()=>setActive(item)}>
+      <IconBox iconId={item.icon} size={44} radius={13} bg={ico.bg} color='#555'/>
+      <div className="item-body">
+        <div className={`item-name ${item.done?'done':''}`}>{item.name}</div>
+        <div className="item-meta">
+          {item.tag&&<span className="item-tag">{item.tag}</span>}
+          {fmtDate(item.date)&&<span className="item-date"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>{fmtDate(item.date)}</span>}
+          {item.url&&<span className="item-link"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>}
+        </div>
+      </div>
+      <div className="item-right">
+        <div className={`item-price ${item.done?'done':''}`}>{item.price}</div>
+        <div className={`item-check ${item.done?'done':''}`} onClick={e=>{e.stopPropagation();setItems(p=>p.map(i=>i.id===item.id?{...i,done:!i.done}:i));}}>
+          {item.done&&<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ── */
+function App(){
+  const[items,setItems]=useState(SEED);
+  const[showAdd,setAdd]=useState(false);
+  const[active,setActive]=useState(null);
+  const[showSearch,setSearch]=useState(false);
+  const[query,setQuery]=useState('');
+  const[showSort,setSort]=useState(false);
+  const[sortBy,setSortBy]=useState('default');
+
+  const total=items.length;
+  const done=items.filter(i=>i.done).length;
+  const pending=items.filter(i=>!i.done).reduce((s,i)=>s+priceNum(i.price),0);
+
+  const fmtDate=d=>{if(!d)return null;const[,m,dy]=d.split('-');return`${m}/${dy}`;};
+  const sortItems=arr=>{
+    if(sortBy==='name')       return[...arr].sort((a,b)=>a.name.localeCompare(b.name));
+    if(sortBy==='price-asc')  return[...arr].sort((a,b)=>priceNum(a.price)-priceNum(b.price));
+    if(sortBy==='price-desc') return[...arr].sort((a,b)=>priceNum(b.price)-priceNum(a.price));
+    if(sortBy==='date')       return[...arr].sort((a,b)=>{if(!a.date)return 1;if(!b.date)return-1;return a.date.localeCompare(b.date);});
+    return arr;
+  };
+
+  const filtered=query.trim()?items.filter(i=>i.name.toLowerCase().includes(query.toLowerCase())):items;
+  const isFiltered=query.trim().length>0;
+  const sortLabel=SORT_OPTS.find(o=>o.id===sortBy)?.label;
+
+  const Stats=()=>isFiltered
+    ?<span style={{color:'#111',fontWeight:500}}>「{query}」找到 {filtered.length} 項</span>
+    :<>{total} 個項目 · {done} 已購買 · NT${pending.toLocaleString()} 待購{sortBy!=='default'&&<span style={{color:'#111',fontWeight:500}}> · {sortLabel}</span>}</>;
+
+  return(
+    <div className="app-container">
+
+      {/* ── Header ── */}
+      <div className="app-header">
+        <div className="app-header-row">
+          {/* Title + desktop inline stats */}
+          <div className="header-left">
+            <span className="app-title">Buy List</span>
+            <span className="header-stats-inline"><Stats/></span>
+          </div>
+
+          {/* Desktop: search always visible */}
+          <div className="d-search-wrap">
+            <span className="d-search-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+            <input className="d-search-input" placeholder="搜尋清單…" value={query} onChange={e=>setQuery(e.target.value)}/>
+          </div>
+
+          <div className="header-spacer"/>
+
+          <div className="header-actions">
+            {/* Mobile: search toggle */}
+            <button className="icon-btn-sm btn-search-toggle" onClick={()=>{setSearch(s=>!s);if(showSearch)setQuery('');}} style={{background:showSearch?'#111':'#f4f4f4'}}>
+              {showSearch
+                ?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                :<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>}
+            </button>
+            {/* Sort */}
+            <button className="icon-btn-sm" onClick={()=>setSort(true)} style={{background:sortBy!=='default'?'#111':'#f4f4f4'}}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={sortBy!=='default'?'white':'#111'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="12" y1="18" x2="20" y2="18"/></svg>
+            </button>
+            {/* Desktop: add button */}
+            <button className="d-add-btn" onClick={()=>setAdd(true)}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              新增項目
+            </button>
+          </div>
+        </div>
+        {/* Mobile subtitle */}
+        <div className="header-sub"><Stats/></div>
+      </div>
+
+      {/* Mobile: collapsible search */}
+      <div className={`search-bar-wrap ${showSearch?'open':''}`}>
+        <div className="search-input-wrap">
+          <span className="search-icon-abs"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+          <input className="search-input-inner" placeholder="搜尋商品名稱…" value={query} onChange={e=>setQuery(e.target.value)} autoFocus={showSearch}/>
+        </div>
+      </div>
+
+      {/* ── Content ── */}
+      <div className="main-content">
+        {isFiltered?(
+          <div className="search-results-wrap">
+            {filtered.length===0
+              ?<div className="empty" style={{paddingTop:60}}><div style={{fontSize:40,marginBottom:8}}>🔍</div><div className="empty-text" style={{fontSize:14}}>沒有符合的項目</div></div>
+              :<div className="search-results-grid">{filtered.map(item=><ItemRow key={item.id} item={item} setItems={setItems} setActive={setActive} fmtDate={fmtDate}/>)}</div>
+            }
+          </div>
+        ):(
+          <div className="sections-layout">
+            {SECTIONS.map(sec=>{
+              const secItems=sortItems(items.filter(i=>i.sec===sec.id));
+              return(
+                <div className="section-col" key={sec.id}>
+                  <div className="section-header">
+                    <span className="s-dot" style={{background:sec.dot}}/>
+                    <span className="s-name">{sec.label}</span>
+                    <span className="s-count">{secItems.length}</span>
+                  </div>
+                  {secItems.length===0
+                    ?<div className="empty"><div className="empty-text">沒有項目</div></div>
+                    :secItems.map(item=><ItemRow key={item.id} item={item} setItems={setItems} setActive={setActive} fmtDate={fmtDate}/>)
+                  }
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <div style={{height:80}}/>
+      </div>
+
+      {/* Mobile FAB */}
+      <button className="fab" onClick={()=>setAdd(true)}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+
+      {/* Overlays */}
+      {showAdd&&<AddSheet onClose={()=>setAdd(false)} onAdd={item=>setItems(p=>[item,...p])}/>}
+      {active&&(
+        <DetailSheet
+          item={items.find(i=>i.id===active.id)}
+          onClose={()=>setActive(null)}
+          onDelete={id=>setItems(p=>p.filter(i=>i.id!==id))}
+          onMove={(id,sec)=>setItems(p=>p.map(i=>i.id===id?{...i,sec}:i))}
+          onDone={id=>setItems(p=>p.map(i=>i.id===id?{...i,done:!i.done}:i))}
+        />
+      )}
+
+      {/* Sort panel */}
+      {showSort&&(
+        <div className="sort-sheet">
+          <div className="sort-backdrop" onClick={()=>setSort(false)}/>
+          <div className="sort-panel">
+            <div className="sheet-handle"/>
+            <div className="sort-title">排序方式</div>
+            {SORT_OPTS.map(opt=>(
+              <div key={opt.id} className={`sort-opt ${sortBy===opt.id?'active':''}`} onClick={()=>{setSortBy(opt.id);setSort(false);}}>
+                <span className="sort-opt-label">{opt.label}</span>
+                {sortBy===opt.id&&<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+
+<!-- Service Worker 註冊（離線支援） -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('[SW] 已啟動'))
+      .catch(e => console.warn('[SW] 啟動失敗', e));
+  });
+}
+</script>
+</body>
+</html>

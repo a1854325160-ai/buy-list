@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Inputs</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #fff7ed; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .section-label { font-size: 11px; font-weight: 500; color: #78716c; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+  /* Inputs */
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field-label { font-size: 13px; font-weight: 500; color: #44403c; }
+  input, select, textarea {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: #1c1917;
+    background: #fff;
+    border: 1.5px solid #e7e5e4;
+    border-radius: 16px;
+    padding: 11px 16px;
+    outline: none;
+    transition: border-color 200ms, box-shadow 200ms;
+    width: 100%;
+  }
+  input::placeholder, textarea::placeholder { color: #a8a29e; }
+  input:focus, select:focus, textarea:focus {
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249,115,22,.2);
+  }
+  .input-error { border-color: #f43f5e !important; }
+  .input-error:focus { box-shadow: 0 0 0 3px rgba(244,63,94,.2) !important; }
+  .input-success { border-color: #22c55e !important; }
+  .input-with-icon { position: relative; }
+  .input-with-icon input { padding-left: 42px; }
+  .input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #a8a29e; font-size: 16px; pointer-events: none; }
+  .help-text { font-size: 12px; color: #78716c; }
+  .error-text { font-size: 12px; color: #f43f5e; }
+  /* Search */
+  .search-wrap { position: relative; }
+  .search-wrap input { background: #f5f5f4; border-color: transparent; border-radius: 9999px; padding: 11px 16px 11px 42px; }
+  .search-wrap input:focus { background: #fff; border-color: #f97316; }
+  /* Toggle / checkbox */
+  .check-row { display: flex; align-items: center; gap: 10px; }
+  .custom-check { width: 22px; height: 22px; border-radius: 7px; border: 2px solid #e7e5e4; background: white; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .custom-check.checked { background: #f97316; border-color: #f97316; color: white; font-size: 13px; }
+  .toggle { width: 48px; height: 28px; border-radius: 9999px; background: #e7e5e4; position: relative; cursor: pointer; transition: background 200ms; }
+  .toggle.on { background: #f97316; }
+  .toggle-dot { width: 22px; height: 22px; border-radius: 50%; background: white; position: absolute; top: 3px; left: 3px; transition: transform 200ms cubic-bezier(0.34,1.56,0.64,1); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+  .toggle.on .toggle-dot { transform: translateX(20px); }
+</style>
+</head>
+<body>
+  <div>
+    <div class="section-label">Text Inputs</div>
+    <div class="row">
+      <div class="field" style="width:200px;">
+        <div class="field-label">Item Name</div>
+        <div class="input-with-icon">
+          <span class="input-icon">🛍</span>
+          <input type="text" placeholder="e.g. 全脂牛奶" />
+        </div>
+        <div class="help-text">Add any item to your list</div>
+      </div>
+      <div class="field" style="width:200px;">
+        <div class="field-label">Quantity</div>
+        <input type="text" value="3" />
+      </div>
+      <div class="field" style="width:200px;">
+        <div class="field-label">Error State</div>
+        <input type="text" class="input-error" value="invalid" />
+        <div class="error-text">This field is required</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="section-label">Search</div>
+    <div class="search-wrap" style="max-width:320px;">
+      <span class="input-icon">🔍</span>
+      <input type="text" placeholder="搜尋商品..." />
+    </div>
+  </div>
+  <div>
+    <div class="section-label">Checkboxes &amp; Toggle</div>
+    <div class="row" style="align-items:center; gap:20px;">
+      <div class="check-row">
+        <div class="custom-check">　</div>
+        <span style="font-size:14px;color:#44403c;">全脂牛奶</span>
+      </div>
+      <div class="check-row">
+        <div class="custom-check checked">✓</div>
+        <span style="font-size:14px;color:#a8a29e;text-decoration:line-through;">雞蛋 (已購買)</span>
+      </div>
+      <div class="check-row">
+        <div class="toggle on"><div class="toggle-dot"></div></div>
+        <span style="font-size:14px;color:#44403c;">共用清單</span>
+      </div>
+      <div class="check-row">
+        <div class="toggle"><div class="toggle-dot"></div></div>
+        <span style="font-size:14px;color:#a8a29e;">通知提醒</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

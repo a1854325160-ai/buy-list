@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Badges & Chips</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #fff7ed; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .section-label { font-size: 11px; font-weight: 500; color: #78716c; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+  /* Badges */
+  .badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 9999px; font-size: 12px; font-weight: 600; padding: 4px 10px; }
+  .badge-primary { background: #ffedd5; color: #c2410c; }
+  .badge-orange { background: #f97316; color: white; }
+  .badge-coral { background: #ffe4e6; color: #be123c; }
+  .badge-amber { background: #fef3c7; color: #b45309; }
+  .badge-success { background: #dcfce7; color: #15803d; }
+  .badge-error { background: #ffe4e6; color: #be123c; }
+  .badge-neutral { background: #f5f5f4; color: #57534e; }
+  .badge-dark { background: #1c1917; color: #fdba74; }
+  /* Dot */
+  .dot { width: 7px; height: 7px; border-radius: 50%; }
+  /* Category chips */
+  .chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 9999px; font-size: 13px; font-weight: 500; padding: 8px 16px; cursor: pointer; border: 1.5px solid transparent; transition: all 150ms; }
+  .chip-active { background: #f97316; color: white; border-color: #f97316; }
+  .chip-default { background: white; color: #44403c; border-color: #e7e5e4; }
+  .chip-default:hover { border-color: #f97316; color: #f97316; }
+  /* Count badge */
+  .count-badge { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #f97316; color: white; font-size: 11px; font-weight: 700; }
+  /* Status dot badge */
+  .status-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
+</style>
+</head>
+<body>
+  <div>
+    <div class="section-label">Badges</div>
+    <div class="row">
+      <span class="badge badge-primary">Groceries</span>
+      <span class="badge badge-orange">12 items</span>
+      <span class="badge badge-coral">Urgent</span>
+      <span class="badge badge-amber">On Sale</span>
+      <span class="badge badge-success"><span class="dot" style="background:#22c55e;"></span>Completed</span>
+      <span class="badge badge-error"><span class="dot" style="background:#f43f5e;"></span>Overdue</span>
+      <span class="badge badge-neutral">Household</span>
+      <span class="badge badge-dark">★ Favourite</span>
+    </div>
+  </div>
+  <div>
+    <div class="section-label">Category Chips</div>
+    <div class="row">
+      <span class="chip chip-active">🛒 全部</span>
+      <span class="chip chip-default">🥦 食品</span>
+      <span class="chip chip-default">🧴 日用品</span>
+      <span class="chip chip-default">🍳 料理</span>
+      <span class="chip chip-default">🐾 寵物</span>
+      <span class="chip chip-default">+ 新增分類</span>
+    </div>
+  </div>
+  <div>
+    <div class="section-label">Count &amp; Status</div>
+    <div class="row">
+      <div style="display:inline-flex;align-items:center;gap:6px;font-size:14px;color:#1c1917;font-weight:500;">
+        購物清單 <span class="count-badge">3</span>
+      </div>
+      <div class="status-badge" style="color:#15803d;"><span class="dot" style="background:#22c55e;"></span>同步完成</div>
+      <div class="status-badge" style="color:#b45309;"><span class="dot" style="background:#f59e0b;"></span>同步中...</div>
+      <div class="status-badge" style="color:#be123c;"><span class="dot" style="background:#f43f5e;"></span>離線模式</div>
+    </div>
+  </div>
+</body>
+</html>

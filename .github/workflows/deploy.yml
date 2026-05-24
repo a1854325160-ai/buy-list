@@ -1,0 +1,62 @@
+name: 🚀 Deploy Buy List App
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate App Icons
+        run: |
+          mkdir -p ui_kits/app/icons
+
+          # 512x512 — 黑底 + 橘色圓角方塊 + 白字 B
+          convert -size 512x512 xc:"#111111" \
+            \( -size 380x380 xc:"#f97316" -draw "roundrectangle 0,0 380,380 72,72" \) \
+            -gravity center -composite \
+            -fill "white" -font "DejaVu-Sans-Bold" -pointsize 220 \
+            -gravity center -annotate 0 "B" \
+            ui_kits/app/icons/icon-512.png
+
+          # 192x192
+          convert ui_kits/app/icons/icon-512.png -resize 192x192 \
+            ui_kits/app/icons/icon-192.png
+
+          # Apple Touch Icon (iOS 主畫面圖示，180x180)
+          convert ui_kits/app/icons/icon-512.png -resize 180x180 \
+            ui_kits/app/apple-touch-icon.png
+
+          echo "✅ Icons generated"
+          ls -la ui_kits/app/icons/
+          ls -la ui_kits/app/apple-touch-icon.png
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ui_kits/app
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

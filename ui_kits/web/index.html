@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buy List</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body,#root{height:100%}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#f7f7f5;color:#111;-webkit-font-smoothing:antialiased}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ── TOPBAR ── */
+.topbar{
+  height:60px;background:#fff;border-bottom:1px solid #ebebeb;
+  display:flex;align-items:center;gap:16px;padding:0 28px;
+  flex-shrink:0;position:relative;z-index:10;
+}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
+.logo-icon{width:32px;height:32px;background:#111;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.logo-text{font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:800;color:#111;letter-spacing:-0.03em;white-space:nowrap}
+.topbar-sep{width:1px;height:22px;background:#ebebeb;flex-shrink:0}
+
+/* Search */
+.search-wrap{flex:1;max-width:360px;position:relative}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;color:#bbb}
+.search-input{width:100%;font-family:'DM Sans',sans-serif;font-size:14px;color:#111;background:#f4f4f4;border:1.5px solid transparent;border-radius:10px;padding:8px 12px 8px 34px;outline:none;transition:all 180ms}
+.search-input:focus{background:#fff;border-color:#111;box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+.search-input::placeholder{color:#bbb}
+.kbd{display:inline-flex;align-items:center;padding:2px 6px;border:1px solid #ddd;border-radius:5px;font-size:11px;color:#aaa;font-family:'DM Sans',sans-serif;background:#f9f9f9;gap:1px}
+
+.topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.sort-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;border:1.5px solid #ebebeb;background:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:#555;cursor:pointer;transition:all 150ms;white-space:nowrap}
+.sort-btn:hover{border-color:#ccc;color:#111}
+.sort-btn.active{background:#111;border-color:#111;color:#fff}
+.add-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:9px;background:#111;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 160ms}
+.add-btn:hover{background:#333}
+.add-btn:active{transform:scale(0.97)}
+
+/* ── STATS BAR ── */
+.stats-bar{height:40px;background:#fff;border-bottom:1px solid #ebebeb;display:flex;align-items:center;gap:24px;padding:0 28px;flex-shrink:0}
+.stat-item{display:flex;align-items:center;gap:6px;font-size:13px;color:#888}
+.stat-dot{width:8px;height:8px;border-radius:50%}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:#111}
+.stat-divider{width:1px;height:16px;background:#ebebeb}
+
+/* ── KANBAN ── */
+.board{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:0;overflow:hidden}
+.col{display:flex;flex-direction:column;border-right:1px solid #ebebeb;overflow:hidden}
+.col:last-child{border-right:none}
+.col-header{padding:18px 20px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;background:#fff;border-bottom:1px solid #ebebeb}
+.col-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.col-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;color:#111;flex:1}
+.col-count{font-family:'JetBrains Mono',monospace;font-size:11px;color:#bbb;font-weight:400}
+.col-add{width:28px;height:28px;border-radius:8px;background:#f4f4f4;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#888;transition:all 150ms}
+.col-add:hover{background:#111;color:#fff}
+.col-body{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#e0e0e0 transparent;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.col-body::-webkit-scrollbar{width:4px}
+.col-body::-webkit-scrollbar-thumb{background:#e0e0e0;border-radius:4px}
+
+/* ── ITEM CARD ── */
+.item-card{background:#fff;border:1.5px solid #ebebeb;border-radius:14px;padding:14px;cursor:pointer;transition:all 160ms cubic-bezier(0.4,0,0.2,1);position:relative}
+.item-card:hover{border-color:#ccc;box-shadow:0 4px 16px rgba(0,0,0,.06);transform:translateY(-1px)}
+.item-card:active{transform:scale(0.985)}
+.item-card.done{opacity:.4}
+.card-top{display:flex;align-items:flex-start;gap:11px;margin-bottom:10px}
+.card-icon-box{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;color:#111;line-height:1.3;flex:1;min-width:0}
+.card-name.done{text-decoration:line-through;color:#ccc}
+.card-check{width:22px;height:22px;border-radius:50%;border:2px solid #e0e0e0;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 180ms cubic-bezier(0.34,1.56,0.64,1);background:#fff;cursor:pointer}
+.card-check:hover{border-color:#aaa}
+.card-check.done{background:#111;border-color:#111}
+.card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-price{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;color:#111}
+.card-price.done{color:#ccc}
+.card-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.card-date{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#f97316;font-weight:500;background:#fff7ed;padding:2px 7px;border-radius:9999px}
+.card-link{display:inline-flex;align-items:center;color:#6366f1;background:#eef2ff;padding:2px 7px;border-radius:9999px;font-size:11px;font-weight:500;gap:3px;text-decoration:none}
+.card-note{font-size:12px;color:#aaa;margin-top:6px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Empty col */
+.col-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;gap:8px;opacity:.5;cursor:pointer;border:2px dashed #e8e8e8;border-radius:14px;transition:all 150ms}
+.col-empty:hover{opacity:.8;border-color:#ccc}
+.col-empty-text{font-size:13px;color:#aaa;text-align:center}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);backdrop-filter:blur(8px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 180ms ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:#fff;border-radius:24px;width:100%;max-width:520px;box-shadow:0 24px 60px rgba(0,0,0,.15),0 8px 20px rgba(0,0,0,.08);animation:modalUp 240ms cubic-bezier(0.34,1.56,0.64,1);overflow:hidden}
+@keyframes modalUp{from{opacity:0;transform:scale(0.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-header{padding:24px 24px 0;display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:#111;letter-spacing:-0.02em}
+.modal-close{width:34px;height:34px;border-radius:50%;background:#f4f4f4;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#888;transition:all 150ms}
+.modal-close:hover{background:#e8e8e8;color:#111}
+.modal-body{padding:20px 24px 24px;display:flex;flex-direction:column;gap:14px}
+.m-field{display:flex;flex-direction:column;gap:6px}
+.m-label{font-size:11px;font-weight:600;color:#aaa;letter-spacing:.06em;text-transform:uppercase}
+.m-input{font-family:'DM Sans',sans-serif;font-size:15px;color:#111;background:#f7f7f5;border:1.5px solid transparent;border-radius:12px;padding:11px 14px;outline:none;width:100%;transition:all 180ms}
+.m-input:focus{background:#fff;border-color:#111;box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+.m-input::placeholder{color:#ccc}
+.m-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.icon-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.icon-opt{aspect-ratio:1;border-radius:12px;border:2px solid #f0f0f0;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 150ms}
+.icon-opt:hover{border-color:#ccc}
+.icon-opt.sel{border-color:#111;background:#111}
+.sec-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sec-tab{padding:10px 8px;border-radius:11px;border:1.5px solid #f0f0f0;background:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#888;cursor:pointer;transition:all 150ms;display:flex;align-items:center;justify-content:center;gap:7px}
+.sec-tab:hover{border-color:#ccc;color:#111}
+.sec-tab.sel{background:#111;border-color:#111;color:#fff}
+.sec-tab-dot{width:7px;height:7px;border-radius:50%}
+.modal-footer{padding:0 24px 24px;display:flex;gap:10px}
+.m-btn{flex:1;padding:13px;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all 150ms}
+.m-btn.primary{background:#111;color:#fff}
+.m-btn.primary:hover{background:#333}
+.m-btn.primary:disabled{background:#e0e0e0;color:#bbb;cursor:not-allowed}
+.m-btn.ghost{background:#f4f4f4;color:#555}
+.m-btn.ghost:hover{background:#e8e8e8;color:#111}
+
+/* ── SORT DROPDOWN ── */
+.sort-dropdown{position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1.5px solid #ebebeb;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.1);min-width:200px;overflow:hidden;z-index:50;animation:fadeIn 150ms ease}
+.sort-item{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;cursor:pointer;font-size:14px;color:#333;transition:background 120ms;white-space:nowrap}
+.sort-item:hover{background:#f7f7f5}
+.sort-item.active{color:#111;font-weight:600}
+
+/* ── DETAIL PANEL ── */
+.detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.2);z-index:150;display:flex;align-items:center;justify-content:flex-end;animation:fadeIn 180ms ease}
+.detail-panel{height:100%;width:380px;background:#fff;box-shadow:-12px 0 40px rgba(0,0,0,.1);display:flex;flex-direction:column;animation:slideLeft 240ms cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes slideLeft{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.dp-header{padding:24px 24px 20px;border-bottom:1px solid #ebebeb;display:flex;align-items:center;gap:12px}
+.dp-back{width:34px;height:34px;border-radius:50%;background:#f4f4f4;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#555;transition:all 150ms;flex-shrink:0}
+.dp-back:hover{background:#e8e8e8;color:#111}
+.dp-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:700;color:#111;flex:1}
+.dp-body{flex:1;overflow-y:auto;padding:24px}
+.dp-icon-wrap{width:72px;height:72px;border-radius:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.dp-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:#111;text-align:center;letter-spacing:-0.02em;margin-bottom:6px}
+.dp-price{font-family:'JetBrains Mono',monospace;font-size:18px;color:#888;text-align:center;margin-bottom:20px}
+.dp-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:24px}
+.dp-chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#555;background:#f4f4f4;padding:6px 12px;border-radius:9999px}
+.dp-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.dp-action{padding:13px;border-radius:14px;border:1.5px solid #ebebeb;background:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#111;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;transition:all 150ms}
+.dp-action:hover{background:#f7f7f5;border-color:#ddd}
+.dp-action.primary{background:#111;color:#fff;border-color:#111}
+.dp-action.primary:hover{background:#333}
+.dp-action.danger{color:#e53e3e;border-color:#fee2e2;background:#fff5f5}
+.dp-section-label{font-size:11px;font-weight:600;color:#aaa;letter-spacing:.06em;text-transform:uppercase;margin:16px 0 8px}
+.dp-move-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dp-link{display:flex;align-items:center;gap:10px;padding:13px 16px;background:#f7f7f5;border-radius:14px;text-decoration:none;transition:background 150ms;margin-top:12px}
+.dp-link:hover{background:#f0f0ee}
+.dp-link-text{font-size:13px;color:#6366f1;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dp-note{background:#f7f7f5;border-radius:14px;padding:14px 16px;font-size:14px;color:#888;line-height:1.5;margin-top:12px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+/* ── SVG ICONS ── */
+const SVGS = {
+  laptop:(c='#555')=><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="13" rx="3" fill={c} opacity=".15"/><rect x="2" y="4" width="20" height="13" rx="3" stroke={c} strokeWidth="1.8" strokeLinejoin="round"/><rect x="5" y="7" width="14" height="7" rx="1.5" fill={c} opacity=".25"/><path d="M1 19.5h22" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><path d="M9 17l-.5 2.5M15 17l.5 2.5" stroke={c} strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  phone:(c='#555')=><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="5" y="1.5" width="14" height="21" rx="3.5" fill={c} opacity=".15"/><rect x="5" y="1.5" width="14" height="21" rx="3.5" stroke={c} strokeWidth="1.8"/><rect x="8" y="5" width="8" height="12" rx="1.5" fill={c} opacity=".2"/><circle cx="12" cy="19" r="1.2" fill={c}/><path d="M10 3h4" stroke={c} strokeWidth="2" strokeLinecap="round"/></svg>,
+  headphones:(c='#555')=><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 14v-3a8 8 0 0 1 16 0v3" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><rect x="2" y="13" width="4" height="6" rx="2" fill={c} opacity=".25" stroke={c} strokeWidth="1.8"/><rect x="18" y="13" width="4" height="6" rx="2" fill={c} opacity=".25" stroke={c} strokeWidth="1.8"/></svg>,
+  drone:(c='#555')=><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" fill={c} opacity=".2" stroke={c} strokeWidth="1.6"/><line x1="12" y1="9" x2="12" y2="6" stroke={c} strokeWidth="1.5" strokeLinecap="round"/><line x1="12" y1="18" x2="12" y2="15" stroke={c} strokeWidth="1.5" strokeLinecap="round"/><line x1="9" y1="12" x2="6" y2="12" stroke={c} strokeWidth="1.5" strokeLinecap="round"/><line x1="18" y1="12" x2="15" y2="12" stroke={c} strokeWidth="1.5" strokeLinecap="round"/><ellipse cx="5" cy="5" rx="2.5" ry="1.2" fill={c} opacity=".3" stroke={c} strokeWidth="1.4" transform="rotate(-20 5 5)"/><ellipse cx="19" cy="5" rx="2.5" ry="1.2" fill={c} opacity=".3" stroke={c} strokeWidth="1.4" transform="rotate(20 19 5)"/><ellipse cx="5" cy="19" rx="2.5" ry="1.2" fill={c} opacity=".3" stroke={c} strokeWidth="1.4" transform="rotate(20 5 19)"/><ellipse cx="19" cy="19" rx="2.5" ry="1.2" fill={c} opacity=".3" stroke={c} strokeWidth="1.4" transform="rotate(-20 19 19)"/></svg>,
+  keyboard:(c='#555')=><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="20" height="11" rx="2.5" fill={c} opacity=".15" stroke={c} strokeWidth="1.8"/><rect x="4" y="10" width="2.5" height="2" rx=".7" fill={c} opacity=".5"/><rect x="7.5" y="10" width="2.5" height="2" rx=".7" fill={c} opacity=".5"/><rect x="11" y="10" width="2.5" height="2" rx=".7" fill={c} opacity=".5"/><rect x="14.5" y="10" width="2.5" height="2" rx=".7" fill={c} opacity=".5"/><rect x="18" y="10" width="2" height="2" rx=".7" fill={c} opacity=".5"/><rect x="6" y="13.5" width="12" height="2" rx=".7" fill={c} opacity=".5"/><rect x="4" y="13.5" width="1.5" height="2" rx=".7" fill={c} opacity=".5"/><rect x="18.5" y="13.5" width="1.5" height="2" rx=".7" fill={c} opacity=".5"/></svg>,
+  monitor:(c='#555')=><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="14" rx="2.5" fill={c} opacity=".15" stroke={c} strokeWidth="1.8"/><rect x="5" y="6" width="14" height="8" rx="1.2" fill={c} opacity=".2"/><path d="M8 21h8M12 17v4" stroke={c} strokeWidth="1.8" strokeLinecap="round"/></svg>,
+  camera:(c='#555')=><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M14.5 4h-5L7.5 7H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3.5L14.5 4z" fill={c} opacity=".15" stroke={c} strokeWidth="1.8" strokeLinejoin="round"/><circle cx="12" cy="13" r="3.5" fill={c} opacity=".25" stroke={c} strokeWidth="1.7"/><circle cx="12" cy="13" r="1.3" fill={c} opacity=".5"/></svg>,
+  watch:(c='#555')=><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="6" y="5" width="12" height="14" rx="4" fill={c} opacity=".15" stroke={c} strokeWidth="1.8"/><path d="M9 3l1.5 2M15 3l-1.5 2M9 21l1.5-2M15 21l-1.5-2" stroke={c} strokeWidth="1.6" strokeLinecap="round"/><path d="M12 9v3.5l2 1.5" stroke={c} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  gamepad:(c='#555')=><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 4h12a2 2 0 0 1 2 2v7a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V6a2 2 0 0 1 2-2z" fill={c} opacity=".15" stroke={c} strokeWidth="1.8"/><line x1="6.5" y1="10" x2="9.5" y2="10" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><line x1="8" y1="8.5" x2="8" y2="11.5" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><circle cx="15" cy="9" r="1.1" fill={c}/><circle cx="17.2" cy="11" r="1.1" fill={c}/></svg>,
+  music:(c='#555')=><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 18V6l12-2v12" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><circle cx="6" cy="18" r="3" fill={c} opacity=".25" stroke={c} strokeWidth="1.7"/><circle cx="18" cy="16" r="3" fill={c} opacity=".25" stroke={c} strokeWidth="1.7"/><circle cx="6" cy="18" r="1.2" fill={c} opacity=".5"/><circle cx="18" cy="16" r="1.2" fill={c} opacity=".5"/></svg>,
+  package:(c='#555')=><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z" fill={c} opacity=".15" stroke={c} strokeWidth="1.8" strokeLinejoin="round"/><path d="M3 8l9 5 9-5" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><line x1="12" y1="13" x2="12" y2="21" stroke={c} strokeWidth="1.8" strokeLinecap="round"/></svg>,
+  zap:(c='#555')=><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill={c} opacity=".2" stroke={c} strokeWidth="1.8" strokeLinejoin="round"/></svg>,
+};
+
+const ICON_LIST=[
+  {id:'laptop',label:'電腦',bg:'#fff8ed'},{id:'phone',label:'手機',bg:'#f0f9ff'},
+  {id:'headphones',label:'耳機',bg:'#fdf4ff'},{id:'drone',label:'無人機',bg:'#f0fdf4'},
+  {id:'keyboard',label:'鍵盤',bg:'#fff7ed'},{id:'monitor',label:'螢幕',bg:'#f8fafc'},
+  {id:'camera',label:'相機',bg:'#fff1f2'},{id:'watch',label:'手錶',bg:'#fefce8'},
+  {id:'gamepad',label:'遊戲',bg:'#eef2ff'},{id:'music',label:'音訊',bg:'#fdf4ff'},
+  {id:'package',label:'其他',bg:'#f7f7f7'},{id:'zap',label:'3C',bg:'#fefce8'},
+];
+
+const SECTIONS=[
+  {id:'priority',label:'優先購入',dot:'#111'},
+  {id:'deferred',label:'延後購入',dot:'#888'},
+  {id:'watching',label:'觀望',dot:'#ccc'},
+];
+
+const SORT_OPTS=[
+  {id:'default',label:'預設順序'},
+  {id:'name',label:'名稱 A → Z'},
+  {id:'price-asc',label:'價格 低 → 高'},
+  {id:'price-desc',label:'價格 高 → 低'},
+  {id:'date',label:'日期 最近優先'},
+];
+
+const SEED=[
+  {id:1,sec:'priority',icon:'laptop',name:'MacBook Pro 14"',price:'NT$65,900',note:'等 M4 Pro 版本',date:'2025-08-01',url:'https://apple.com/tw/shop/buy-mac/macbook-pro',done:false},
+  {id:2,sec:'priority',icon:'headphones',name:'AirPods Pro 2',price:'NT$7,490',note:'',date:'',url:'',done:false},
+  {id:3,sec:'deferred',icon:'drone',name:'DJI Mini 4 Pro',price:'NT$24,900',note:'等下一代或降價',date:'2025-12-01',url:'https://store.dji.com/tw/product/dji-mini-4-pro',done:false},
+  {id:4,sec:'deferred',icon:'phone',name:'iPad mini 7',price:'NT$16,900',note:'看年底有沒有新款',date:'',url:'',done:false},
+  {id:5,sec:'watching',icon:'music',name:'Sony WH-1000XM6',price:'NT$11,900',note:'跟 Bose QC 45 比較中',date:'',url:'',done:false},
+  {id:6,sec:'watching',icon:'keyboard',name:'Keychron Q1',price:'NT$6,200',note:'',date:'',url:'',done:false},
+];
+
+function priceNum(p){return parseInt((p||'0').replace(/[^0-9]/g,''))||0;}
+function fmtDate(d){if(!d)return null;const[,m,dy]=d.split('-');return`${m}/${dy}`;}
+
+/* ── ICON BOX ── */
+function IconBox({iconId,size=40,radius=11,bg='#f4f4f4',color='#555',sel=false}){
+  const fn=SVGS[iconId]||SVGS['package'];
+  return <div style={{width:size,height:size,borderRadius:radius,background:sel?'#111':bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'background 150ms'}}>{fn(sel?'#fff':color)}</div>;
+}
+
+/* ── ADD / EDIT MODAL ── */
+function ItemModal({initial,defaultSec,onClose,onSave}){
+  const [name,setName]=useState(initial?.name||'');
+  const [price,setPrice]=useState(initial?.price||'');
+  const [note,setNote]=useState(initial?.note||'');
+  const [date,setDate]=useState(initial?.date||'');
+  const [url,setUrl]=useState(initial?.url||'');
+  const [icon,setIcon]=useState(initial?.icon||'laptop');
+  const [sec,setSec]=useState(initial?.sec||defaultSec||'priority');
+  const isEdit=!!initial;
+
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-header">
+          <div className="modal-title">{isEdit?'編輯項目':'新增項目'}</div>
+          <button className="modal-close" onClick={onClose}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div className="modal-body">
+          <div className="m-field">
+            <div className="m-label">圖示</div>
+            <div className="icon-grid">
+              {ICON_LIST.map(ic=>(
+                <div key={ic.id} className={`icon-opt ${icon===ic.id?'sel':''}`} onClick={()=>setIcon(ic.id)}>
+                  <IconBox iconId={ic.id} size={34} radius={9} bg={ic.bg} color='#555' sel={icon===ic.id}/>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="m-field">
+            <div className="m-label">名稱</div>
+            <input className="m-input" placeholder="例：DJI Mini 4 Pro" value={name} onChange={e=>setName(e.target.value)} autoFocus/>
+          </div>
+          <div className="m-row">
+            <div className="m-field">
+              <div className="m-label">價格</div>
+              <input className="m-input" placeholder="NT$0" value={price} onChange={e=>setPrice(e.target.value)} style={{fontFamily:'JetBrains Mono,monospace'}}/>
+            </div>
+            <div className="m-field">
+              <div className="m-label">目標日期</div>
+              <input className="m-input" type="date" value={date} onChange={e=>setDate(e.target.value)} style={{fontSize:14}}/>
+            </div>
+          </div>
+          <div className="m-field">
+            <div className="m-label">商品連結</div>
+            <input className="m-input" placeholder="https://..." value={url} onChange={e=>setUrl(e.target.value)} style={{fontSize:13}}/>
+          </div>
+          <div className="m-field">
+            <div className="m-label">備註</div>
+            <input className="m-input" placeholder="顏色、版本、等降價..." value={note} onChange={e=>setNote(e.target.value)}/>
+          </div>
+          <div className="m-field">
+            <div className="m-label">分類</div>
+            <div className="sec-tabs">
+              {SECTIONS.map(s=>(
+                <button key={s.id} className={`sec-tab ${sec===s.id?'sel':''}`} onClick={()=>setSec(s.id)}>
+                  <span className="sec-tab-dot" style={{background:sec===s.id?'#fff':s.dot}}/>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="m-btn ghost" onClick={onClose}>取消</button>
+          <button className="m-btn primary" disabled={!name.trim()}
+            onClick={()=>{onSave({id:initial?.id||Date.now(),sec,icon,name,price:price||'—',note,date,url,done:initial?.done||false});onClose();}}>
+            {isEdit?'儲存變更':'加入清單'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── DETAIL PANEL ── */
+function DetailPanel({item,onClose,onDelete,onMove,onDone,onEdit}){
+  if(!item)return null;
+  const ico=ICON_LIST.find(i=>i.id===item.icon)||ICON_LIST[0];
+  const others=SECTIONS.filter(s=>s.id!==item.sec);
+  return(
+    <div className="detail-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="detail-panel">
+        <div className="dp-header">
+          <button className="dp-back" onClick={onClose}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <div className="dp-title">항목 상세</div>
+          <button className="dp-back" onClick={onEdit} title="편집">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+        </div>
+        <div className="dp-body">
+          <div className="dp-icon-wrap" style={{background:ico.bg}}>{(SVGS[item.icon]||SVGS['package'])('#555')}</div>
+          <div className="dp-name">{item.name}</div>
+          <div className="dp-price">{item.price}</div>
+          <div className="dp-chips">
+            {fmtDate(item.date)&&<span className="dp-chip" style={{color:'#f97316',background:'#fff7ed'}}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              {fmtDate(item.date)}</span>}
+            {item.note&&<span className="dp-chip">📝 {item.note}</span>}
+          </div>
+          <div className="dp-actions">
+            <button className="dp-action primary" onClick={()=>{onDone(item.id);onClose();}}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              {item.done?'取消購買':'標記購買'}
+            </button>
+            <button className="dp-action danger" onClick={()=>{onDelete(item.id);onClose();}}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e53e3e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+              刪除
+            </button>
+          </div>
+          <div className="dp-section-label">移動到</div>
+          <div className="dp-move-row">
+            {others.map(s=>(
+              <button key={s.id} className="dp-action" onClick={()=>{onMove(item.id,s.id);onClose();}}>
+                <span style={{width:9,height:9,borderRadius:'50%',background:s.dot,display:'block'}}/>
+                {s.label}
+              </button>
+            ))}
+          </div>
+          {item.url&&(
+            <a className="dp-link" href={item.url} target="_blank" rel="noopener noreferrer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              <span className="dp-link-text">{item.url.replace(/^https?:\/\//,'')}</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ── */
+function App(){
+  const [items,setItems]=useState(SEED);
+  const [query,setQuery]=useState('');
+  const [sortBy,setSortBy]=useState('default');
+  const [showSort,setShowSort]=useState(false);
+  const [showAdd,setShowAdd]=useState(false);
+  const [addSec,setAddSec]=useState('priority');
+  const [active,setActive]=useState(null);
+  const [editing,setEditing]=useState(null);
+  const sortRef=useRef(null);
+
+  useEffect(()=>{
+    function h(e){if(sortRef.current&&!sortRef.current.contains(e.target))setShowSort(false);}
+    document.addEventListener('mousedown',h);
+    return()=>document.removeEventListener('mousedown',h);
+  },[]);
+
+  function sortFn(arr){
+    if(sortBy==='name')return[...arr].sort((a,b)=>a.name.localeCompare(b.name));
+    if(sortBy==='price-asc')return[...arr].sort((a,b)=>priceNum(a.price)-priceNum(b.price));
+    if(sortBy==='price-desc')return[...arr].sort((a,b)=>priceNum(b.price)-priceNum(a.price));
+    if(sortBy==='date')return[...arr].sort((a,b)=>{if(!a.date)return 1;if(!b.date)return -1;return a.date.localeCompare(b.date);});
+    return arr;
+  }
+
+  const filtered=query.trim()?items.filter(i=>i.name.toLowerCase().includes(query.toLowerCase())):items;
+  const total=items.length,done=items.filter(i=>i.done).length;
+  const totalVal=items.reduce((s,i)=>s+priceNum(i.price),0);
+
+  function saveItem(item){
+    setItems(p=>{const idx=p.findIndex(i=>i.id===item.id);if(idx>=0){const n=[...p];n[idx]=item;return n;}return[item,...p];});
+  }
+
+  return(
+    <div className="app">
+      {/* Topbar */}
+      <div className="topbar">
+        <div className="logo">
+          <div className="logo-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          </div>
+          <span className="logo-text">Buy List</span>
+        </div>
+        <div className="topbar-sep"/>
+        <div className="search-wrap">
+          <span className="search-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </span>
+          <input className="search-input" placeholder="搜尋項目… ⌘K" value={query} onChange={e=>setQuery(e.target.value)}/>
+        </div>
+        <div className="topbar-right">
+          <div style={{position:'relative'}} ref={sortRef}>
+            <button className={`sort-btn ${sortBy!=='default'?'active':''}`} onClick={()=>setShowSort(s=>!s)}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+              {sortBy==='default'?'排序':SORT_OPTS.find(o=>o.id===sortBy)?.label}
+            </button>
+            {showSort&&(
+              <div className="sort-dropdown">
+                {SORT_OPTS.map(o=>(
+                  <div key={o.id} className={`sort-item ${sortBy===o.id?'active':''}`} onClick={()=>{setSortBy(o.id);setShowSort(false);}}>
+                    {o.label}
+                    {sortBy===o.id&&<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <button className="add-btn" onClick={()=>{setAddSec('priority');setShowAdd(true);}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            新增項目
+          </button>
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <div className="stats-bar">
+        {SECTIONS.map((s,i)=>{
+          const n=items.filter(i=>i.sec===s.id).length;
+          return(<React.Fragment key={s.id}>
+            {i>0&&<div className="stat-divider"/>}
+            <div className="stat-item">
+              <span className="stat-dot" style={{background:s.dot}}/>
+              <span>{s.label}</span>
+              <span className="stat-val">{n}</span>
+            </div>
+          </React.Fragment>);
+        })}
+        <div className="stat-divider"/>
+        <div className="stat-item">
+          <span>總計</span>
+          <span className="stat-val">NT${totalVal.toLocaleString()}</span>
+        </div>
+        <div className="stat-divider"/>
+        <div className="stat-item">
+          <span>已購買</span>
+          <span className="stat-val">{done} / {total}</span>
+        </div>
+        {query&&<div className="stat-divider"/>}
+        {query&&<div className="stat-item" style={{color:'#111',fontWeight:500}}>「{query}」找到 {filtered.length} 項</div>}
+      </div>
+
+      {/* Board */}
+      <div className="board">
+        {SECTIONS.map(sec=>{
+          const secItems=sortFn(filtered.filter(i=>i.sec===sec.id));
+          return(
+            <div key={sec.id} className="col">
+              <div className="col-header">
+                <span className="col-dot" style={{background:sec.dot}}/>
+                <span className="col-title">{sec.label}</span>
+                <span className="col-count">{secItems.length}</span>
+              </div>
+              <div className="col-body">
+                {secItems.length===0&&(
+                  <div className="col-empty" onClick={()=>{setAddSec(sec.id);setShowAdd(true);}}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <div className="col-empty-text">點擊新增</div>
+                  </div>
+                )}
+                {secItems.map(item=>{
+                  const ico=ICON_LIST.find(i=>i.id===item.icon)||ICON_LIST[0];
+                  return(
+                    <div key={item.id} className={`item-card ${item.done?'done':''}`} onClick={()=>setActive(item)}>
+                      <div className="card-top">
+                        <IconBox iconId={item.icon} size={40} radius={11} bg={ico.bg} color='#555'/>
+                        <div className="card-name" style={{flex:1}}>{item.name}</div>
+                        <div className={`card-check ${item.done?'done':''}`}
+                          onClick={e=>{e.stopPropagation();setItems(p=>p.map(i=>i.id===item.id?{...i,done:!i.done}:i));}}>
+                          {item.done&&<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                        </div>
+                      </div>
+                      {item.note&&<div className="card-note">{item.note}</div>}
+                      <div className="card-bottom">
+                        <div className={`card-price ${item.done?'done':''}`}>{item.price}</div>
+                        <div className="card-meta">
+                          {fmtDate(item.date)&&<span className="card-date">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            {fmtDate(item.date)}</span>}
+                          {item.url&&<span className="card-link">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                            連結</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Modals */}
+      {showAdd&&<ItemModal defaultSec={addSec} onClose={()=>setShowAdd(false)} onSave={saveItem}/>}
+      {editing&&<ItemModal initial={editing} onClose={()=>setEditing(null)} onSave={item=>{saveItem(item);setEditing(null);setActive(item);}}/>}
+      {active&&!editing&&(
+        <DetailPanel
+          item={items.find(i=>i.id===active.id)}
+          onClose={()=>setActive(null)}
+          onDelete={id=>{setItems(p=>p.filter(i=>i.id!==id));setActive(null);}}
+          onMove={(id,sec)=>{setItems(p=>p.map(i=>i.id===id?{...i,sec}:i));setActive(null);}}
+          onDone={id=>setItems(p=>p.map(i=>i.id===id?{...i,done:!i.done}:i))}
+          onEdit={()=>setEditing(items.find(i=>i.id===active.id))}
+        />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
